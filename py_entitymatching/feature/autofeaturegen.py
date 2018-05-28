@@ -142,7 +142,7 @@ def get_features(ltable, rtable, l_attr_types, r_attr_types,
         if l_attr_type != r_attr_type:
             features_1 = _get_features_for_type(l_attr_type)
             features_2 = _get_features_for_type(r_attr_type)
-            features = set(features_1).union(features_2)
+            features = sorted(set(features_1).union(features_2))
         else:
             # Generate features if the attribute types are the same
             features = _get_features_for_type(l_attr_type)
