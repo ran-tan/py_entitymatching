@@ -6,6 +6,7 @@ import six
 import pandas as pd
 from math import ceil
 from scipy.stats import iqr
+from scipy.sparse import issparse
 from py_entitymatching.utils.validation_helper import validate_object_type
 from py_entitymatching.feature.attributeutils import get_attrs_to_project
 from sklearn.feature_selection import chi2, f_classif, mutual_info_classif
