@@ -15,6 +15,7 @@ from sklearn.feature_selection import mutual_info_classif as mi_d
 from sklearn.feature_selection import mutual_info_regression as mi_c
 from skfeature.utility.data_discretization import data_discretization
 from skfeature.function.information_theoretical_based import MIFS, MRMR, CIFE, JMI, CMIM, ICAP, DISR, FCBF
+from py_entitymatching.feature.discretizers import MDLPCDiscretizer
 
 
 def select_features_mrmr(feature_table, table,
@@ -173,7 +174,8 @@ def select_features_mi(feature_table, table,
     x, y = table[project_attrs], table[target_attr]
     # discretize feature vectors
     names = x.columns
-    x = _discretize(x.values)
+    discretizer = MDLPCDiscretizer()
+    x = discretizer.fit_transform(x.values, y.values)
 
     # fit and select most relevant features
     result = mi_filter_fun(x, y, n_selected_features=parameter)
@@ -369,11 +371,12 @@ def _get_mi_funs():
     return dict(zip(mi_names, mi_funs))
 
 
-def _discretize(array):
-    # Get the shape of the array
-    n_sample, n_feature = array.shape
-    # Apply Freedman-Diaconis' rule (no assumption on the distribution)
-    # to estimate the number of bins needed for discretization
-    bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(array)))
-    # Return discretized array
-    return data_discretization(array, bins)
+# def _discretize(array):
+#     # Get the shape of the array
+#     n_sample, n_feature = array.shape
+#     # Apply Freedman-Diaconis' rule (no assumption on the distribution)
+#     # to estimate the number of bins needed for discretization
+#     bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(array)))
+#     # Return discretized array
+#     return data_discretization(array, bins)
+
