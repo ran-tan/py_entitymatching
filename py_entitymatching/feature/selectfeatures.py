@@ -174,8 +174,9 @@ def select_features_mi(feature_table, table,
     x, y = table[project_attrs], table[target_attr]
     # discretize feature vectors
     names = x.columns
-    discretizer = MDLPCDiscretizer()
-    x = discretizer.fit_transform(x.values, y.values)
+    # discretizer = MDLPCDiscretizer()
+    # x = discretizer.fit_transform(x.values, y.values)
+    x = _discretize(x.values)
 
     # fit and select most relevant features
     result = mi_filter_fun(x, y, n_selected_features=parameter)
@@ -371,12 +372,12 @@ def _get_mi_funs():
     return dict(zip(mi_names, mi_funs))
 
 
-# def _discretize(array):
-#     # Get the shape of the array
-#     n_sample, n_feature = array.shape
-#     # Apply Freedman-Diaconis' rule (no assumption on the distribution)
-#     # to estimate the number of bins needed for discretization
-#     bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(array)))
-#     # Return discretized array
-#     return data_discretization(array, bins)
+def _discretize(array):
+    # Get the shape of the array
+    n_sample, n_feature = array.shape
+    # Apply Freedman-Diaconis' rule (no assumption on the distribution)
+    # to estimate the number of bins needed for discretization
+    bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(array)))
+    # Return discretized array
+    return data_discretization(array, bins)
 
