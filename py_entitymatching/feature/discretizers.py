@@ -36,7 +36,7 @@ class MDLPCDiscretizer(TransformerMixin):
 
     def fit_transform(self, X, y=None, **kwargs):
         self.fit(X, y, **kwargs)
-        self.transform(X, inplace=True)
+        return self.transform(X, inplace=True)
 
     #######################################
     # Initialize boundary points
