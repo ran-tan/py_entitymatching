@@ -32,7 +32,6 @@ def select_features_mrmr(feature_table, table,
 
     feature_names_selected = []
 
-    #
     feature_names = project_attrs
     discrete = {fn: issparse(x[fn]) for fn in feature_names}
 
@@ -174,9 +173,9 @@ def select_features_mi(feature_table, table,
     x, y = table[project_attrs], table[target_attr]
     # discretize feature vectors
     names = x.columns
-    # discretizer = MDLPCDiscretizer()
-    # x = discretizer.fit_transform(x.values, y.values)
-    x = _discretize(x.values)
+    discretizer = MDLPCDiscretizer()
+    x = discretizer.fit_transform(x.values, y.values)
+    # x = _discretize(x.values)
 
     # fit and select most relevant features
     result = mi_filter_fun(x, y, n_selected_features=parameter)
