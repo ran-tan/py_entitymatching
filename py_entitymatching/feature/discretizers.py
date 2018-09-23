@@ -1,10 +1,21 @@
+"""
+This module contains functions to discretize features using the MDLPC criterion.
+Code adopted from https://github.com/navicto/Discretization-MDLPC
+"""
+import logging
+
 import numpy as np
 from math import log
-from pyitlib import discrete_random_variable as drv
+from skfeature.utility.entropy_estimators import entropyd
 from sklearn.base import TransformerMixin
+
+logger = logging.getLogger(__name__)
 
 
 class MDLPCDiscretizer(TransformerMixin):
+    """
+    Discretize based on the MDLPC criterion.
+    """
     def __init__(self, **kwargs):
         self.features = kwargs.get('features', None)
         self.labels = kwargs.get('labels', None)
@@ -73,15 +84,16 @@ class MDLPCDiscretizer(TransformerMixin):
     #######################################
     # Apply MDLPC to get cut points
     #######################################
+
     @staticmethod
     def cut_point_information_gain(X, y, cut_point):
         left_mask = X <= cut_point
         right_mask = X > cut_point
         (N, N_left, N_right) = (len(X), left_mask.sum(), right_mask.sum())
 
-        gain = drv.entropy(y) - \
-               (N_left / N) * drv.entropy(y[left_mask]) - \
-               (N_right / N) * drv.entropy(y[right_mask])
+        gain = entropyd(y) - \
+               (N_left / N) * entropyd(y[left_mask]) - \
+               (N_right / N) * entropyd(y[right_mask])
 
         return gain
 
@@ -92,9 +104,9 @@ class MDLPCDiscretizer(TransformerMixin):
         N, k = len(X), len(np.unique(y))
         k_left, k_right = len(np.unique(y[left_mask])), len(np.unique(y[right_mask]))
 
-        delta = log(3 ** k, 2) - (k * drv.entropy(y)) + \
-                (k_left * drv.entropy(y[left_mask])) + \
-                (k_right * drv.entropy(y[right_mask]))
+        delta = log(3 ** k, 2) - (k * entropyd(y)) + \
+                (k_left * entropyd(y[left_mask])) + \
+                (k_right * entropyd(y[right_mask]))
 
         gain_threshold = (log(N - 1, 2) + delta) / N
 
