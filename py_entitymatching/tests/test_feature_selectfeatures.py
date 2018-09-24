@@ -11,6 +11,7 @@ from py_entitymatching.feature.autofeaturegen import get_features_for_matching
 from py_entitymatching.feature.scalers import scale_features
 from py_entitymatching.feature.selectfeatures import select_features_univariate
 from py_entitymatching.feature.selectfeatures import select_features_mi
+from py_entitymatching.feature.selectfeatures import select_features_mrmr
 
 datasets_path = os.sep.join([get_install_path(), 'tests', 'test_datasets', 'matcherselector'])
 path_a = os.sep.join([datasets_path, 'DBLP_demo.csv'])
@@ -85,4 +86,11 @@ class SelectFeaturesTestCases(unittest.TestCase):
             feature_table=feature_table, table=x,
             target_attr='gold', exclude_attrs=['_id', 'ltable.id', 'rtable.id'],
             mi_filter='MRMR', parameter=2)
+        self.assertEqual(isinstance(feature_table_selected, pd.DataFrame), True)
+
+    def test_select_features_mrmr_valid_input(self):
+        feature_table_selected = select_features_mrmr(
+            feature_table=feature_table, table=x,
+            target_attr='gold', exclude_attrs=['_id', 'ltable.id', 'rtable.id'],
+            independent_attrs=['id', 'title', 'authors', 'venue', 'year'], parameter=2)
         self.assertEqual(isinstance(feature_table_selected, pd.DataFrame), True)

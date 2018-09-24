@@ -20,7 +20,7 @@ from py_entitymatching.feature.discretizers import MDLPCDiscretizer
 
 def select_features_mrmr(feature_table, table,
                          target_attr=None, exclude_attrs=None,
-                         parameter=2):
+                         independent_attrs=None, parameter=2):
 
     # get attributes to project, validate parameters
     project_attrs = get_attrs_to_project(table=table,
@@ -30,24 +30,36 @@ def select_features_mrmr(feature_table, table,
     # project feature vectors into features:x and target:y
     x, y = table[project_attrs], table[target_attr]
 
+    feature_names = []
+    # group features by attribute and select the most relevant feature from each group
+    for attr in independent_attrs:
+        feature_group = \
+            list(feature_table[feature_table.left_attribute == attr].feature_name.values)
+
+        mutual_info = list(mi_d(x[feature_group], y))
+        scored_features = list(zip(mutual_info, feature_group))
+        max_rel = max(scored_features, key=lambda x: x[0])
+        feature_names.append(max_rel[1])
+
     feature_names_selected = []
 
-    feature_names = project_attrs
-    discrete = {fn: issparse(x[fn]) for fn in feature_names}
-
     mutual_info = list(mi_d(x, y))
-    scored_features = list(zip(mutual_info, feature_names))
-    max_rel = max(scored_features, key=lambda x: x[0])
-    feature_names_selected.append(max_rel[1])
-    feature_names.remove(max_rel[1])
+    scored_features = {fn: mi for mi, fn in list(zip(mutual_info, feature_names))}
+    max_rel = max([(k, v) for k, v in scored_features.items()], key=lambda x:x[1])
+
+    feature_names_selected.append(max_rel[0])
+    scored_features.pop(max_rel[0])
+    feature_names.remove(max_rel[0])
+
+    discrete = {fn: issparse(x[fn]) for fn in feature_names}
     # iteratively select features based on
     # minimum redundancy maximum relevance (mRMR) criteria
     for _ in range(parameter - 1):
-        mutual_info = list(mi_d(x[feature_names], y))
-        scored_features = list(zip(mutual_info, feature_names))
+        # mutual_info = list(mi_d(x[feature_names], y))
+        # scored_features = list(zip(mutual_info, feature_names))
 
         mrmr_scored_features = []
-        for mi, fn in scored_features:
+        for fn, mi in scored_features.items():
             xx = x[feature_names_selected]
             yy = x[fn]
             if discrete[fn]:
@@ -55,10 +67,12 @@ def select_features_mrmr(feature_table, table,
             else:
                 dep = mi_c(xx, yy)
             mi -= sum(dep) / len(dep)
-            mrmr_scored_features.append((mi, fn))
+            mrmr_scored_features.append((fn, mi))
 
-        mrmr_mi, fn = max(mrmr_scored_features, key=lambda x: x[0])
+        fn, mrmr_mi = max(mrmr_scored_features, key=lambda x: x[1])
+
         feature_names_selected.append(fn)
+        scored_features.pop(fn)
         feature_names.remove(fn)
 
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)
@@ -175,6 +189,7 @@ def select_features_mi(feature_table, table,
     names = x.columns
     discretizer = MDLPCDiscretizer()
     x = discretizer.fit_transform(x.values, y.values)
+    # # Deprecated discretizer
     # x = _discretize(x.values)
 
     # fit and select most relevant features
@@ -371,12 +386,13 @@ def _get_mi_funs():
     return dict(zip(mi_names, mi_funs))
 
 
-def _discretize(array):
-    # Get the shape of the array
-    n_sample, n_feature = array.shape
-    # Apply Freedman-Diaconis' rule (no assumption on the distribution)
-    # to estimate the number of bins needed for discretization
-    bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(array)))
-    # Return discretized array
-    return data_discretization(array, bins)
+# # Deprecated discretizer function
+# def _discretize(array):
+#     # Get the shape of the array
+#     n_sample, n_feature = array.shape
+#     # Apply Freedman-Diaconis' rule (no assumption on the distribution)
+#     # to estimate the number of bins needed for discretization
+#     bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(array)))
+#     # Return discretized array
+#     return data_discretization(array, bins)
 
