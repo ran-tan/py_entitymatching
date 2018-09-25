@@ -4,8 +4,8 @@ This module contains functions for selecting most relevant features.
 
 import six
 import pandas as pd
-from math import ceil
-from scipy.stats import iqr
+# from math import ceil
+# from scipy.stats import iqr
 from scipy.sparse import issparse
 from py_entitymatching.utils.validation_helper import validate_object_type
 from py_entitymatching.feature.attributeutils import get_attrs_to_project
@@ -13,7 +13,7 @@ from sklearn.feature_selection import chi2, f_classif, mutual_info_classif
 from sklearn.feature_selection import GenericUnivariateSelect
 from sklearn.feature_selection import mutual_info_classif as mi_d
 from sklearn.feature_selection import mutual_info_regression as mi_c
-from skfeature.utility.data_discretization import data_discretization
+# from skfeature.utility.data_discretization import data_discretization
 from skfeature.function.information_theoretical_based import MIFS, MRMR, CIFE, JMI, CMIM, ICAP, DISR, FCBF
 from py_entitymatching.feature.discretizers import MDLPCDiscretizer
 
@@ -186,19 +186,16 @@ def select_features_mi(feature_table, table,
     # project feature vectors into features:x and target:y
     x, y = table[project_attrs], table[target_attr]
     # discretize feature vectors
-    names = x.columns
     discretizer = MDLPCDiscretizer()
-    x = discretizer.fit_transform(x.values, y.values)
-    # # Deprecated discretizer
-    # x = _discretize(x.values)
+    x_d = discretizer.fit_transform(x.values, y.values)
 
     # fit and select most relevant features
-    result = mi_filter_fun(x, y, n_selected_features=parameter)
+    result = mi_filter_fun(x_d, y, n_selected_features=parameter)
 
     # get selected features in feature_table
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)
-    for idx in result[0]:
-        ft = feature_table.loc[feature_table['feature_name'] == names[idx]]
+    for fn in x.columns[result[0]]:
+        ft = feature_table.loc[feature_table['feature_name'] == fn]
         feature_table_selected = pd.concat([feature_table_selected, ft])
     feature_table_selected.reset_index(inplace=True, drop=True)
 
