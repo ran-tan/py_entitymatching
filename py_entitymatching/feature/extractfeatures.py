@@ -4,6 +4,7 @@ This module contains functions to extract features using a feature table.
 import logging
 
 import multiprocessing
+import time
 import os
 
 import pandas as pd
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
-                         attrs_after=None, verbose=False,
+                         attrs_after=None, verbose=False, get_cost=False,
                          show_progress=True, n_jobs=1):
     """
     This function extracts feature vectors from a DataFrame (typically a
@@ -141,32 +142,37 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
     # id_list = [(row[fk_ltable], row[fk_rtable]) for i, row in
     #            candset.iterrows()]
     # id_list = [tuple(tup) for tup in candset[[fk_ltable, fk_rtable]].values]
+    if feature_table.empty:
+        feature_vectors = pd.DataFrame()
+        feature_costs = pd.DataFrame()
+    else:
+        # # Set index for convenience
+        l_df = ltable.set_index(l_key, drop=False)
+        r_df = rtable.set_index(r_key, drop=False)
 
-    # # Set index for convenience
-    l_df = ltable.set_index(l_key, drop=False)
-    r_df = rtable.set_index(r_key, drop=False)
+        # # Apply feature functions
+        ch.log_info(logger, 'Applying feature functions', verbose)
+        col_names = list(candset.columns)
+        fk_ltable_idx = col_names.index(fk_ltable)
+        fk_rtable_idx = col_names.index(fk_rtable)
 
-    # # Apply feature functions
-    ch.log_info(logger, 'Applying feature functions', verbose)
-    col_names = list(candset.columns)
-    fk_ltable_idx = col_names.index(fk_ltable)
-    fk_rtable_idx = col_names.index(fk_rtable)
+        n_procs = get_num_procs(n_jobs, len(candset))
 
-    n_procs = get_num_procs(n_jobs, len(candset))
+        c_splits = pd.np.array_split(candset, n_procs)
 
-    c_splits = pd.np.array_split(candset, n_procs)
+        pickled_obj = cloudpickle.dumps(feature_table)
 
-    pickled_obj = cloudpickle.dumps(feature_table)
-
-    feat_vals_by_splits = Parallel(n_jobs=n_procs)(delayed(get_feature_vals_by_cand_split)(pickled_obj,
-                                                                                           fk_ltable_idx,
-                                                                                           fk_rtable_idx,
-                                                                                           l_df, r_df,
-                                                                                           c_splits[i],
-                                                                                           show_progress and i == len(
-                                                                                               c_splits) - 1)
-                                                   for i in range(len(c_splits)))
-    feature_vectors = pd.concat(feat_vals_by_splits, axis=0, ignore_index=True)
+        feat_vals_by_splits = Parallel(n_jobs=n_procs)(delayed(get_feature_vals_by_cand_split)(pickled_obj,
+                                                                                               fk_ltable_idx,
+                                                                                               fk_rtable_idx,
+                                                                                               l_df, r_df,
+                                                                                               c_splits[i],
+                                                                                               show_progress and i == len(
+                                                                                                   c_splits) - 1)
+                                                       for i in range(len(c_splits)))
+        feat_vals, costs = zip(*feat_vals_by_splits)
+        feature_vectors = pd.concat(feat_vals, axis=0, ignore_index=True)
+        feature_costs = pd.concat(costs, axis=0, ignore_index=True).sum()
 
     ch.log_info(logger, 'Constructing output table', verbose)
 
@@ -202,8 +208,11 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
     cm.init_properties(feature_vectors)
     cm.copy_properties(candset, feature_vectors)
 
+    if get_cost:
+        return feature_vectors, feature_costs
     # Finally, return the feature vectors
-    return feature_vectors
+    else:
+        return feature_vectors
 
 
 def get_feature_vals_by_cand_split(pickled_obj, fk_ltable_idx, fk_rtable_idx, l_df, r_df, candsplit, show_progress):
@@ -218,25 +227,32 @@ def get_feature_vals_by_cand_split(pickled_obj, fk_ltable_idx, fk_rtable_idx, l_
     rtable_tuples = [r_df.loc[fk_rtable_val] for fk_rtable_val in fk_rtable_vals]
 
     feat_vals = []
+    costs = []
     for row in feature_table.itertuples(index=False):
         if show_progress:
             prog_bar.update()
 
         meta_feat = {col: val for col, val in zip(feature_table.columns, row)}
 
-        feat_val = apply_feat_fns(ltable_tuples, rtable_tuples, meta_feat)
+        feat_val, cost = apply_feat_fns(ltable_tuples, rtable_tuples, meta_feat)
         feat_vals.append(feat_val)
+        costs.append(cost)
 
-    return pd.concat(feat_vals, axis=1)
+    return pd.concat(feat_vals, axis=1), pd.concat(costs, axis=1)
 
 
 def apply_feat_fns(ltable_tuples, rtable_tuples, meta_feat):
     name = meta_feat['feature_name']
     func = meta_feat['function']
+    s_time = time.process_time()
     feat_vals = [func(l_tuple, r_tuple)
                  for l_tuple, r_tuple in zip(ltable_tuples, rtable_tuples)]
+    e_time = time.process_time()
 
-    return pd.DataFrame.from_dict({name: feat_vals})
+    feat_vector = pd.DataFrame.from_dict({name: feat_vals})
+    cost = pd.DataFrame.from_dict({name: [e_time - s_time]})
+
+    return feat_vector, cost
 
 
 def get_num_procs(n_jobs, min_procs):
