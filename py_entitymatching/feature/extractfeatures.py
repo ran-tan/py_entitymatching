@@ -166,17 +166,10 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
                                                                                            show_progress and i == len(
                                                                                                c_splits) - 1)
                                                    for i in range(len(c_splits)))
-    assert False
-    feat_vals = sum(feat_vals_by_splits, [])
-
-    # Construct output table
-    feature_vectors = pd.DataFrame(feat_vals, index=candset.index.values)
-    # # Rearrange the feature names in the input feature table order
-    feature_names = list(feature_table['feature_name'])
-    feature_vectors = feature_vectors[feature_names]
+    feature_vectors = pd.concat(feat_vals_by_splits, axis=0, ignore_index=True)
 
     ch.log_info(logger, 'Constructing output table', verbose)
-    # print(feature_vectors)
+
     # # Insert attrs_before
     if attrs_before:
         if not isinstance(attrs_before, list):
@@ -234,29 +227,7 @@ def get_feature_vals_by_cand_split(pickled_obj, fk_ltable_idx, fk_rtable_idx, l_
         feat_val = apply_feat_fns(ltable_tuples, rtable_tuples, meta_feat)
         feat_vals.append(feat_val)
 
-    # l_dict = {}
-    # r_dict = {}
-
-    # for row in candsplit.itertuples(index=False):
-    #     if show_progress:
-    #         prog_bar.update()
-    #
-    #     fk_ltable_val = row[fk_ltable_idx]
-    #     fk_rtable_val = row[fk_rtable_idx]
-    #
-    #     if fk_ltable_val not in l_dict:
-    #         l_dict[fk_ltable_val] = l_df.ix[fk_ltable_val]
-    #     l_tuple = l_dict[fk_ltable_val]
-    #
-    #     if fk_rtable_val not in r_dict:
-    #         r_dict[fk_rtable_val] = r_df.ix[fk_rtable_val]
-    #     r_tuple = r_dict[fk_rtable_val]
-    #
-    #     f = apply_feat_fns(l_tuple, r_tuple, feature_table)
-    #
-    #     feat_vals.append(f)
-
-    return feat_vals
+    return pd.concat(feat_vals, axis=1)
 
 
 def apply_feat_fns(ltable_tuples, rtable_tuples, meta_feat):
@@ -266,21 +237,6 @@ def apply_feat_fns(ltable_tuples, rtable_tuples, meta_feat):
                  for l_tuple, r_tuple in zip(ltable_tuples, rtable_tuples)]
 
     return pd.DataFrame.from_dict({name: feat_vals})
-
-# def apply_feat_fns(tuple1, tuple2, feat_dict):
-#     """
-#     Apply feature functions to two tuples.
-#     """
-#     # Get the feature names
-#     feat_names = list(feat_dict['feature_name'])
-#     # Get the feature functions
-#     feat_funcs = list(feat_dict['function'])
-#     # Compute the feature value by applying the feature function to the input
-#     #  tuples.
-#     feat_vals = [f(tuple1, tuple2) for f in feat_funcs]
-#     # Return a dictionary where the keys are the feature names and the values
-#     #  are the feature values.
-#     return dict(zip(feat_names, feat_vals))
 
 
 def get_num_procs(n_jobs, min_procs):
