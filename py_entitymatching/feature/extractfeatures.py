@@ -47,8 +47,12 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
             that should be added after the feature vectors (defaults to None).
         verbose (boolean): A flag to indicate whether the debug information
             should be displayed (defaults to False).
+        get_cost (boolean): A flag to indicate whether to return the cost of
+            extracting each feature vector (defaults to False).
         show_progress (boolean): A flag to indicate whether the progress of
             extracting feature vectors must be displayed (defaults to True).
+        n_jobs (integer): A integer to indicate the number of parallel jobs
+            (defaults to 1).
 
 
     Returns:
