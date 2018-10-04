@@ -166,7 +166,7 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
                                                                                            show_progress and i == len(
                                                                                                c_splits) - 1)
                                                    for i in range(len(c_splits)))
-
+    assert False
     feat_vals = sum(feat_vals_by_splits, [])
 
     # Construct output table
@@ -216,47 +216,71 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
 def get_feature_vals_by_cand_split(pickled_obj, fk_ltable_idx, fk_rtable_idx, l_df, r_df, candsplit, show_progress):
     feature_table = cloudpickle.loads(pickled_obj)
     if show_progress:
-        prog_bar = pyprind.ProgBar(len(candsplit))
+        prog_bar = pyprind.ProgBar(len(feature_table))
 
-    l_dict = {}
-    r_dict = {}
+    fk_ltable_vals = candsplit.iloc[:, fk_ltable_idx]
+    fk_rtable_vals = candsplit.iloc[:, fk_rtable_idx]
+
+    ltable_tuples = [l_df.loc[fk_ltable_val] for fk_ltable_val in fk_ltable_vals]
+    rtable_tuples = [r_df.loc[fk_rtable_val] for fk_rtable_val in fk_rtable_vals]
 
     feat_vals = []
-    for row in candsplit.itertuples(index=False):
+    for row in feature_table.itertuples(index=False):
         if show_progress:
             prog_bar.update()
 
-        fk_ltable_val = row[fk_ltable_idx]
-        fk_rtable_val = row[fk_rtable_idx]
+        meta_feat = {col: val for col, val in zip(feature_table.columns, row)}
 
-        if fk_ltable_val not in l_dict:
-            l_dict[fk_ltable_val] = l_df.ix[fk_ltable_val]
-        l_tuple = l_dict[fk_ltable_val]
+        feat_val = apply_feat_fns(ltable_tuples, rtable_tuples, meta_feat)
+        feat_vals.append(feat_val)
 
-        if fk_rtable_val not in r_dict:
-            r_dict[fk_rtable_val] = r_df.ix[fk_rtable_val]
-        r_tuple = r_dict[fk_rtable_val]
+    # l_dict = {}
+    # r_dict = {}
 
-        f = apply_feat_fns(l_tuple, r_tuple, feature_table)
-        feat_vals.append(f)
+    # for row in candsplit.itertuples(index=False):
+    #     if show_progress:
+    #         prog_bar.update()
+    #
+    #     fk_ltable_val = row[fk_ltable_idx]
+    #     fk_rtable_val = row[fk_rtable_idx]
+    #
+    #     if fk_ltable_val not in l_dict:
+    #         l_dict[fk_ltable_val] = l_df.ix[fk_ltable_val]
+    #     l_tuple = l_dict[fk_ltable_val]
+    #
+    #     if fk_rtable_val not in r_dict:
+    #         r_dict[fk_rtable_val] = r_df.ix[fk_rtable_val]
+    #     r_tuple = r_dict[fk_rtable_val]
+    #
+    #     f = apply_feat_fns(l_tuple, r_tuple, feature_table)
+    #
+    #     feat_vals.append(f)
 
     return feat_vals
 
 
-def apply_feat_fns(tuple1, tuple2, feat_dict):
-    """
-    Apply feature functions to two tuples.
-    """
-    # Get the feature names
-    feat_names = list(feat_dict['feature_name'])
-    # Get the feature functions
-    feat_funcs = list(feat_dict['function'])
-    # Compute the feature value by applying the feature function to the input
-    #  tuples.
-    feat_vals = [f(tuple1, tuple2) for f in feat_funcs]
-    # Return a dictionary where the keys are the feature names and the values
-    #  are the feature values.
-    return dict(zip(feat_names, feat_vals))
+def apply_feat_fns(ltable_tuples, rtable_tuples, meta_feat):
+    name = meta_feat['feature_name']
+    func = meta_feat['function']
+    feat_vals = [func(l_tuple, r_tuple)
+                 for l_tuple, r_tuple in zip(ltable_tuples, rtable_tuples)]
+
+    return pd.DataFrame.from_dict({name: feat_vals})
+
+# def apply_feat_fns(tuple1, tuple2, feat_dict):
+#     """
+#     Apply feature functions to two tuples.
+#     """
+#     # Get the feature names
+#     feat_names = list(feat_dict['feature_name'])
+#     # Get the feature functions
+#     feat_funcs = list(feat_dict['function'])
+#     # Compute the feature value by applying the feature function to the input
+#     #  tuples.
+#     feat_vals = [f(tuple1, tuple2) for f in feat_funcs]
+#     # Return a dictionary where the keys are the feature names and the values
+#     #  are the feature values.
+#     return dict(zip(feat_names, feat_vals))
 
 
 def get_num_procs(n_jobs, min_procs):
