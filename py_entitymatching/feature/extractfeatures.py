@@ -166,14 +166,15 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
 
         pickled_obj = cloudpickle.dumps(feature_table)
 
-        feat_vals_by_splits = Parallel(n_jobs=n_procs)(delayed(get_feature_vals_by_cand_split)(pickled_obj,
-                                                                                               fk_ltable_idx,
-                                                                                               fk_rtable_idx,
-                                                                                               l_df, r_df,
-                                                                                               c_splits[i],
-                                                                                               show_progress and i == len(
-                                                                                                   c_splits) - 1)
-                                                       for i in range(len(c_splits)))
+        feat_vals_by_splits = Parallel(n_jobs=n_procs)(
+            delayed(get_feature_vals_by_cand_split)(
+                pickled_obj,
+                fk_ltable_idx, fk_rtable_idx,
+                l_df, r_df,
+                c_splits[i],
+                show_progress)
+            for i in range(len(c_splits)))
+
         feat_vals, costs = zip(*feat_vals_by_splits)
         feature_vectors = pd.concat(feat_vals, axis=0, ignore_index=True)
         feature_costs = pd.concat(costs, axis=0, ignore_index=True).sum()
