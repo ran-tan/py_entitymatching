@@ -9,7 +9,6 @@ import os
 
 import pandas as pd
 import pyprind
-import tempfile
 
 from cloudpickle import cloudpickle
 from joblib import Parallel
@@ -180,12 +179,12 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
         attrs_before = gh.list_diff(attrs_before, [key, fk_ltable, fk_rtable])
         attrs_before.reverse()
         for a in attrs_before:
-            feature_vectors.insert(0, a, candset[a])
+            feature_vectors.insert(0, a, candset[a].reset_index(drop=True))
 
     # # Insert keys
-    feature_vectors.insert(0, fk_rtable, candset[fk_rtable])
-    feature_vectors.insert(0, fk_ltable, candset[fk_ltable])
-    feature_vectors.insert(0, key, candset[key])
+    feature_vectors.insert(0, fk_rtable, candset[fk_rtable].reset_index(drop=True))
+    feature_vectors.insert(0, fk_ltable, candset[fk_ltable].reset_index(drop=True))
+    feature_vectors.insert(0, key, candset[key].reset_index(drop=True))
 
     # # insert attrs after
     if attrs_after:
@@ -195,11 +194,8 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
         attrs_after.reverse()
         col_pos = len(feature_vectors.columns)
         for a in attrs_after:
-            feature_vectors.insert(col_pos, a, candset[a])
+            feature_vectors.insert(col_pos, a, candset[a].reset_index(drop=True))
             col_pos += 1
-
-    # Reset the index
-    # feature_vectors.reset_index(inplace=True, drop=True)
 
     # # Update the catalog
     cm.init_properties(feature_vectors)
