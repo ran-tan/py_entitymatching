@@ -140,12 +140,6 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
                                       logger, verbose)
 
     # Extract features
-
-
-
-    # id_list = [(row[fk_ltable], row[fk_rtable]) for i, row in
-    #            candset.iterrows()]
-    # id_list = [tuple(tup) for tup in candset[[fk_ltable, fk_rtable]].values]
     if feature_table.empty:
         feature_vectors = pd.DataFrame()
         feature_costs = pd.DataFrame()
@@ -161,9 +155,7 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
         fk_rtable_idx = col_names.index(fk_rtable)
 
         n_procs = get_num_procs(n_jobs, len(candset))
-
         c_splits = pd.np.array_split(candset, n_procs)
-
         pickled_obj = cloudpickle.dumps(feature_table)
 
         feat_vals_by_splits = Parallel(n_jobs=n_procs)(
@@ -171,9 +163,9 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
                 pickled_obj,
                 fk_ltable_idx, fk_rtable_idx,
                 l_df, r_df,
-                c_splits[i],
+                c_split,
                 show_progress)
-            for i in range(len(c_splits)))
+            for c_split in c_splits)
 
         feat_vals, costs = zip(*feat_vals_by_splits)
         feature_vectors = pd.concat(feat_vals, axis=0, ignore_index=True)
@@ -213,9 +205,9 @@ def extract_feature_vecs(candset, attrs_before=None, feature_table=None,
     cm.init_properties(feature_vectors)
     cm.copy_properties(candset, feature_vectors)
 
+    # Finally, return the feature vectors
     if get_cost:
         return feature_vectors, feature_costs
-    # Finally, return the feature vectors
     else:
         return feature_vectors
 
