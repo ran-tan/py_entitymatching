@@ -43,7 +43,7 @@ def select_features_group_info(feature_table, table,
     feature_names.sort(key=lambda x:x[0], reverse=True)
 
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)
-    for _, fn in feature_names:
+    for _, fn in feature_names[:parameter]:
         ft = feature_table.loc[feature_table['feature_name'] == fn]
         feature_table_selected = pd.concat([feature_table_selected, ft])
 
