@@ -18,10 +18,43 @@ from skfeature.function.information_theoretical_based import MIFS, MRMR, CIFE, J
 from py_entitymatching.feature.discretizers import MDLPCDiscretizer
 
 
-def select_features_mrmr(feature_table, table,
+def select_features_group_info(feature_table, table,
+                               target_attr=None, exclude_attrs=None,
+                               independent_attrs=None, parameter=2):
+    # get attributes to project, validate parameters
+    project_attrs = get_attrs_to_project(table=table,
+                                         target_attr=target_attr,
+                                         exclude_attrs=exclude_attrs)
+
+    # project feature vectors into features:x and target:y
+    x, y = table[project_attrs], table[target_attr]
+
+    feature_names = []
+    # group features by attribute and select the most relevant feature from each group
+    for attr in independent_attrs:
+        feature_group = \
+            list(feature_table[feature_table.left_attribute == attr].feature_name.values)
+
+        mutual_info = list(mi_d(x[feature_group], y))
+        scored_features = list(zip(mutual_info, feature_group))
+        max_rel = max(scored_features, key=lambda x: x[0])
+        feature_names.append(max_rel)
+
+    feature_names.sort(key=lambda x:x[0], reverse=True)
+
+    feature_table_selected = pd.DataFrame(columns=feature_table.columns)
+    for _, fn in feature_names:
+        ft = feature_table.loc[feature_table['feature_name'] == fn]
+        feature_table_selected = pd.concat([feature_table_selected, ft])
+
+    feature_table_selected.reset_index(inplace=True, drop=True)
+
+    return feature_table_selected
+
+
+def select_features_cost(feature_table, table,
                          target_attr=None, exclude_attrs=None,
                          independent_attrs=None, parameter=2):
-
     # get attributes to project, validate parameters
     project_attrs = get_attrs_to_project(table=table,
                                          target_attr=target_attr,
@@ -45,7 +78,7 @@ def select_features_mrmr(feature_table, table,
 
     mutual_info = list(mi_d(x, y))
     scored_features = {fn: mi for mi, fn in list(zip(mutual_info, feature_names))}
-    max_rel = max([(k, v) for k, v in scored_features.items()], key=lambda x:x[1])
+    max_rel = max([(k, v) for k, v in scored_features.items()], key=lambda x: x[1])
 
     feature_names_selected.append(max_rel[0])
     scored_features.pop(max_rel[0])
@@ -382,7 +415,6 @@ def _get_mi_funs():
     # the actual filter functions as values.
     return dict(zip(mi_names, mi_funs))
 
-
 # # Deprecated discretizer function
 # def _discretize(array):
 #     # Get the shape of the array
@@ -392,4 +424,3 @@ def _get_mi_funs():
 #     bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(array)))
 #     # Return discretized array
 #     return data_discretization(array, bins)
-
