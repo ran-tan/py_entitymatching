@@ -29,6 +29,9 @@ def select_features_group_info(feature_table, table,
 
     # project feature vectors into features:x and target:y
     x, y = table[project_attrs], table[target_attr]
+    # discretize feature vectors
+    discretizer = MDLPCDiscretizer()
+    discretizer.fit_transform(x.values, y.values)
 
     feature_scores = []
     # group features by attribute and select the most relevant feature from each group
@@ -62,6 +65,9 @@ def select_features_cost(feature_table, table,
 
     # project feature vectors into features:x and target:y
     x, y = table[project_attrs], table[target_attr]
+    # discretize feature vectors
+    discretizer = MDLPCDiscretizer()
+    discretizer.fit_transform(x.values, y.values)
 
     feature_names = []
     # group features by attribute and select the most relevant feature from each group
@@ -220,10 +226,10 @@ def select_features_mi(feature_table, table,
     x, y = table[project_attrs], table[target_attr]
     # discretize feature vectors
     discretizer = MDLPCDiscretizer()
-    x_d = discretizer.fit_transform(x.values, y.values)
+    discretizer.fit_transform(x.values, y.values)
 
     # fit and select most relevant features
-    result = mi_filter_fun(x_d, y, n_selected_features=parameter)
+    result = mi_filter_fun(x.values, y.values, n_selected_features=parameter)
 
     # get selected features in feature_table
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)

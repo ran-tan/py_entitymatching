@@ -10,7 +10,7 @@ from py_entitymatching.feature.extractfeatures import extract_feature_vecs
 from py_entitymatching.feature.autofeaturegen import get_features_for_matching
 from py_entitymatching.feature.scalers import scale_features
 from py_entitymatching.feature.selectfeatures import \
-    select_features_univariate, select_features_group_info, select_features_mi
+    select_features_univariate, select_features_group_info, select_features_mi, select_features_cost
 
 datasets_path = os.sep.join([get_install_path(), 'tests', 'test_datasets', 'matcherselector'])
 path_a = os.sep.join([datasets_path, 'DBLP_demo.csv'])
@@ -89,6 +89,13 @@ class SelectFeaturesTestCases(unittest.TestCase):
 
     def test_select_features_group_info_valid_input(self):
         feature_table_selected = select_features_group_info(
+            feature_table=feature_table, table=x,
+            target_attr='gold', exclude_attrs=['_id', 'ltable.id', 'rtable.id'],
+            independent_attrs=['id', 'title', 'authors', 'venue', 'year'], parameter=2)
+        self.assertEqual(isinstance(feature_table_selected, pd.DataFrame), True)
+
+    def test_select_features_cost_valid_input(self):
+        feature_table_selected = select_features_cost(
             feature_table=feature_table, table=x,
             target_attr='gold', exclude_attrs=['_id', 'ltable.id', 'rtable.id'],
             independent_attrs=['id', 'title', 'authors', 'venue', 'year'], parameter=2)
