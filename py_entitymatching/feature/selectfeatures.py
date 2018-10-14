@@ -6,17 +6,15 @@ import six
 import pandas as pd
 # from math import ceil
 # from scipy.stats import iqr
-from scipy.sparse import issparse
 from py_entitymatching.utils.validation_helper import validate_object_type
 from py_entitymatching.feature.attributeutils import get_attrs_to_project
 from sklearn.feature_selection import chi2, f_classif, mutual_info_classif
 from sklearn.feature_selection import GenericUnivariateSelect
-from sklearn.feature_selection import mutual_info_classif as mi_d
-from sklearn.feature_selection import mutual_info_regression as mi_c
 from skfeature.utility.entropy_estimators import midd, cmidd
 # from skfeature.utility.data_discretization import data_discretization
 from skfeature.function.information_theoretical_based import MIFS, MRMR, CIFE, JMI, CMIM, ICAP, DISR, FCBF
 from py_entitymatching.feature.discretizers import MDLPCDiscretizer
+from py_entitymatching.feature.costbasedLCSI import cost_based_lcsi
 
 
 def select_features_group_info(feature_table, table,
@@ -55,9 +53,8 @@ def select_features_group_info(feature_table, table,
     return feature_table_selected
 
 
-def select_features_cost(feature_table, table,
-                         target_attr=None, exclude_attrs=None,
-                         independent_attrs=None, parameter=2):
+def select_features_cost(feature_table, table, costs, alpha=0.0,
+                         target_attr=None, exclude_attrs=None, parameter=2):
     # get attributes to project, validate parameters
     project_attrs = get_attrs_to_project(table=table,
                                          target_attr=target_attr,
@@ -65,60 +62,19 @@ def select_features_cost(feature_table, table,
 
     # project feature vectors into features:x and target:y
     x, y = table[project_attrs], table[target_attr]
+    costs = costs.loc[project_attrs]
     # discretize feature vectors
     discretizer = MDLPCDiscretizer()
     discretizer.fit_transform(x.values, y.values)
 
-    feature_names = []
-    # group features by attribute and select the most relevant feature from each group
-    for attr in independent_attrs:
-        feature_group = \
-            list(feature_table[feature_table.left_attribute == attr].feature_name.values)
+    # fit and select most relevant features
+    result = cost_based_lcsi(x.values, y.values, n_selected_features=parameter)
 
-        mutual_info = list(mi_d(x[feature_group], y))
-        scored_features = list(zip(mutual_info, feature_group))
-        max_rel = max(scored_features, key=lambda x: x[0])
-        feature_names.append(max_rel[1])
-
-    feature_names_selected = []
-
-    mutual_info = list(mi_d(x, y))
-    scored_features = {fn: mi for mi, fn in list(zip(mutual_info, feature_names))}
-    max_rel = max([(k, v) for k, v in scored_features.items()], key=lambda x: x[1])
-
-    feature_names_selected.append(max_rel[0])
-    scored_features.pop(max_rel[0])
-    feature_names.remove(max_rel[0])
-
-    discrete = {fn: issparse(x[fn]) for fn in feature_names}
-    # iteratively select features based on
-    # minimum redundancy maximum relevance (mRMR) criteria
-    for _ in range(parameter - 1):
-        # mutual_info = list(mi_d(x[feature_names], y))
-        # scored_features = list(zip(mutual_info, feature_names))
-
-        mrmr_scored_features = []
-        for fn, mi in scored_features.items():
-            xx = x[feature_names_selected]
-            yy = x[fn]
-            if discrete[fn]:
-                dep = mi_d(xx, yy)
-            else:
-                dep = mi_c(xx, yy)
-            mi -= sum(dep) / len(dep)
-            mrmr_scored_features.append((fn, mi))
-
-        fn, mrmr_mi = max(mrmr_scored_features, key=lambda x: x[1])
-
-        feature_names_selected.append(fn)
-        scored_features.pop(fn)
-        feature_names.remove(fn)
-
+    # get selected features in feature_table
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)
-    for fn in feature_names_selected:
+    for fn in x.columns[result[0]]:
         ft = feature_table.loc[feature_table['feature_name'] == fn]
         feature_table_selected = pd.concat([feature_table_selected, ft])
-
     feature_table_selected.reset_index(inplace=True, drop=True)
 
     return feature_table_selected

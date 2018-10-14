@@ -20,10 +20,11 @@ A = read_csv_metadata(path_a, key='id')
 B = read_csv_metadata(path_b, key='id')
 C = read_csv_metadata(path_c, ltable=A, rtable=B)
 feature_table = get_features_for_matching(A, B, validate_inferred_attr_types=False)
-F = extract_feature_vecs(C,
-                         attrs_before=['_id', 'ltable.id', 'rtable.id'],
-                         attrs_after=['gold'],
-                         feature_table=feature_table)
+F, costs = extract_feature_vecs(C,
+                                attrs_before=['_id', 'ltable.id', 'rtable.id'],
+                                attrs_after=['gold'],
+                                feature_table=feature_table,
+                                get_cost=True)
 
 H = impute_table(F,
                  exclude_attrs=['_id', 'ltable.id', 'rtable.id', 'gold'],
@@ -96,7 +97,6 @@ class SelectFeaturesTestCases(unittest.TestCase):
 
     def test_select_features_cost_valid_input(self):
         feature_table_selected = select_features_cost(
-            feature_table=feature_table, table=x,
-            target_attr='gold', exclude_attrs=['_id', 'ltable.id', 'rtable.id'],
-            independent_attrs=['id', 'title', 'authors', 'venue', 'year'], parameter=2)
+            feature_table=feature_table, table=x, costs=costs, alpha=1.0,
+            target_attr='gold', exclude_attrs=['_id', 'ltable.id', 'rtable.id'], parameter=2)
         self.assertEqual(isinstance(feature_table_selected, pd.DataFrame), True)
