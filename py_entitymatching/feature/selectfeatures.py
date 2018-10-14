@@ -13,6 +13,7 @@ from sklearn.feature_selection import chi2, f_classif, mutual_info_classif
 from sklearn.feature_selection import GenericUnivariateSelect
 from sklearn.feature_selection import mutual_info_classif as mi_d
 from sklearn.feature_selection import mutual_info_regression as mi_c
+from skfeature.utility.entropy_estimators import midd, cmidd
 # from skfeature.utility.data_discretization import data_discretization
 from skfeature.function.information_theoretical_based import MIFS, MRMR, CIFE, JMI, CMIM, ICAP, DISR, FCBF
 from py_entitymatching.feature.discretizers import MDLPCDiscretizer
@@ -29,21 +30,20 @@ def select_features_group_info(feature_table, table,
     # project feature vectors into features:x and target:y
     x, y = table[project_attrs], table[target_attr]
 
-    feature_names = []
+    feature_scores = []
     # group features by attribute and select the most relevant feature from each group
     for attr in independent_attrs:
         feature_group = \
             list(feature_table[feature_table.left_attribute == attr].feature_name.values)
-
-        mutual_info = list(mi_d(x[feature_group], y))
+        mutual_info = [midd(x[fn], y) for fn in feature_group]
         scored_features = list(zip(mutual_info, feature_group))
         max_rel = max(scored_features, key=lambda x: x[0])
-        feature_names.append(max_rel)
+        feature_scores.append(max_rel)
 
-    feature_names.sort(key=lambda x:x[0], reverse=True)
+    feature_scores.sort(key=lambda x:x[0], reverse=True)
 
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)
-    for _, fn in feature_names[:parameter]:
+    for _, fn in feature_scores[:parameter]:
         ft = feature_table.loc[feature_table['feature_name'] == fn]
         feature_table_selected = pd.concat([feature_table_selected, ft])
 

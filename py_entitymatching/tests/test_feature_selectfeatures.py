@@ -9,9 +9,8 @@ from py_entitymatching import impute_table
 from py_entitymatching.feature.extractfeatures import extract_feature_vecs
 from py_entitymatching.feature.autofeaturegen import get_features_for_matching
 from py_entitymatching.feature.scalers import scale_features
-from py_entitymatching.feature.selectfeatures import select_features_univariate
-from py_entitymatching.feature.selectfeatures import select_features_mi
-from py_entitymatching.feature.selectfeatures import select_features_group_info
+from py_entitymatching.feature.selectfeatures import \
+    select_features_univariate, select_features_group_info, select_features_mi
 
 datasets_path = os.sep.join([get_install_path(), 'tests', 'test_datasets', 'matcherselector'])
 path_a = os.sep.join([datasets_path, 'DBLP_demo.csv'])
