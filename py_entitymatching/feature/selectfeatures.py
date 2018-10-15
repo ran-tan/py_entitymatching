@@ -38,7 +38,7 @@ def select_features_group_info(feature_table, table,
         max_rel = max(scored_features, key=lambda x: x[0])
         feature_scores.append(max_rel)
 
-    feature_scores.sort(key=lambda x:x[0], reverse=True)
+    feature_scores.sort(key=lambda x: x[0], reverse=True)
 
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)
     for _, fn in feature_scores[:parameter]:
