@@ -68,7 +68,7 @@ def select_features_cost(feature_table, table, costs, alpha=0.0,
     discretizer.fit_transform(x.values, y.values)
 
     # fit and select most relevant features
-    result = cost_based_lcsi(x.values, y.values, n_selected_features=parameter)
+    result = cost_based_lcsi(x.values, y.values, costs, alpha, parameter)
 
     # get selected features in feature_table
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)

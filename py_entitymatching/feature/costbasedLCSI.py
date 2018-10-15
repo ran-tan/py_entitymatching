@@ -1,7 +1,7 @@
 from skfeature.utility.entropy_estimators import *
 
 
-def cost_based_lcsi(X, y, **kwargs):
+def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
     """
     This function implements the basic scoring criteria for linear combination of shannon information term.
     The scoring criteria is calculated based on the formula j_cmi=I(f;y)-beta*sum_j(I(fj;f))+gamma*sum(I(fj;f|y))
@@ -12,16 +12,8 @@ def cost_based_lcsi(X, y, **kwargs):
         input data, guaranteed to be a discrete data matrix
     y: {numpy array}, shape (n_samples,)
         input class labels
-    kwargs: {dictionary}
-        Parameters for different feature selection algorithms.
-        beta: {float}
-            beta is the parameter in j_cmi=I(f;y)-beta*sum(I(fj;f))+gamma*sum(I(fj;f|y))
-        gamma: {float}
-            gamma is the parameter in j_cmi=I(f;y)-beta*sum(I(fj;f))+gamma*sum(I(fj;f|y))
-        function_name: {string}
-            name of the feature selection function
-        n_selected_features: {int}
-            number of features to select
+    n_selected_features: {int}
+        number of features to select
 
     Output
     ------
@@ -29,8 +21,6 @@ def cost_based_lcsi(X, y, **kwargs):
         index of selected features, F[0] is the most important feature
     J_CMI: {numpy array}, shape: (n_features,)
         corresponding objective function value of selected features
-    MIfy: {numpy array}, shape: (n_features,)
-        corresponding mutual information between selected features and response
 
     Reference
     ---------
@@ -42,18 +32,6 @@ def cost_based_lcsi(X, y, **kwargs):
     F = []
     # Objective function value for selected features
     J_CMI = []
-    # Mutual information between feature and response
-    MIfy = []
-    # indicate whether the user specifies the number of features
-    is_n_selected_features_specified = False
-    # initialize the parameters
-    if 'beta' in kwargs.keys():
-        beta = kwargs['beta']
-    if 'gamma' in kwargs.keys():
-        gamma = kwargs['gamma']
-    if 'n_selected_features' in kwargs.keys():
-        n_selected_features = kwargs['n_selected_features']
-        is_n_selected_features_specified = True
 
     # select the feature whose j_cmi is the largest
     # t1 stores I(f;y) for each feature f
@@ -66,25 +44,21 @@ def cost_based_lcsi(X, y, **kwargs):
         f = X[:, i]
         t1[i] = midd(f, y)
 
+    def add_feature(idx):
+        F.append(idx)
+        J_CMI.append(t1[idx])
+        return X[:, idx]
+
+    # select the feature whose mutual information is the largest
+    idx = np.argmax(t1)
+    f_select = add_feature(idx)
+
+    if n_selected_features == 1:
+        return np.array(F), np.array(J_CMI)
+
     # make sure that j_cmi is positive at the very beginning
-    j_cmi = 1
-
-    while True:
-        if len(F) == 0:
-            # select the feature whose mutual information is the largest
-            idx = np.argmax(t1)
-            F.append(idx)
-            J_CMI.append(t1[idx])
-            MIfy.append(t1[idx])
-            f_select = X[:, idx]
-
-        if is_n_selected_features_specified:
-            if len(F) == n_selected_features:
-                break
-        else:
-            if j_cmi < 0:
-                break
-
+    j_cmi = J_CMI[0]
+    while len(F) < n_selected_features and j_cmi > 0:
         # we assign an extreme small value to j_cmi to ensure it is smaller than all possible values of j_cmi
         j_cmi = -1E30
         beta = 1.0 / len(F)
@@ -100,9 +74,7 @@ def cost_based_lcsi(X, y, **kwargs):
                 if t > j_cmi:
                     j_cmi = t
                     idx = i
-        F.append(idx)
-        J_CMI.append(j_cmi)
-        MIfy.append(t1[idx])
-        f_select = X[:, idx]
 
-    return np.array(F), np.array(J_CMI), np.array(MIfy)
+        f_select = add_feature(idx)
+
+    return np.array(F), np.array(J_CMI)
