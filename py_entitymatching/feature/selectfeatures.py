@@ -69,7 +69,7 @@ def select_features_cost(feature_table, table, costs, alpha=0.0,
 
     # get selected features in feature_table
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)
-    for fn in x.columns[result]:
+    for fn in x.columns[result[0]]:
         ft = feature_table.loc[feature_table['feature_name'] == fn]
         feature_table_selected = pd.concat([feature_table_selected, ft])
     feature_table_selected.reset_index(inplace=True, drop=True)

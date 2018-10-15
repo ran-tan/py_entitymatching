@@ -48,6 +48,7 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
     # select the feature whose mutual information is the largest
     idx = np.argmax(t1/info_term_scaler - alpha*costs.values/cost_scaler)
     F.append(idx)
+    J_CMI.append(t1[idx]/info_term_scaler - alpha*costs.iloc[idx]/cost_scaler)
     f_select = X[:, idx]
 
     if n_selected_features == 1:
@@ -73,6 +74,7 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
                     idx = i
 
         F.append(idx)
+        J_CMI.append(j_cmi)
         f_select = X[:, idx]
 
-    return np.array(F)
+    return np.array(F), np.array(J_CMI)
