@@ -4,14 +4,11 @@ This module contains functions for selecting most relevant features.
 
 import six
 import pandas as pd
-# from math import ceil
-# from scipy.stats import iqr
 from py_entitymatching.utils.validation_helper import validate_object_type
 from py_entitymatching.feature.attributeutils import get_attrs_to_project
 from sklearn.feature_selection import chi2, f_classif, mutual_info_classif
 from sklearn.feature_selection import GenericUnivariateSelect
-from skfeature.utility.entropy_estimators import midd, cmidd
-# from skfeature.utility.data_discretization import data_discretization
+from skfeature.utility.entropy_estimators import midd
 from skfeature.function.information_theoretical_based import MIFS, MRMR, CIFE, JMI, CMIM, ICAP, DISR, FCBF
 from py_entitymatching.feature.discretizers import MDLPCDiscretizer
 from py_entitymatching.feature.costbasedLCSI import cost_based_lcsi
@@ -377,12 +374,3 @@ def _get_mi_funs():
     # the actual filter functions as values.
     return dict(zip(mi_names, mi_funs))
 
-# # Deprecated discretizer function
-# def _discretize(array):
-#     # Get the shape of the array
-#     n_sample, n_feature = array.shape
-#     # Apply Freedman-Diaconis' rule (no assumption on the distribution)
-#     # to estimate the number of bins needed for discretization
-#     bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(array)))
-#     # Return discretized array
-#     return data_discretization(array, bins)

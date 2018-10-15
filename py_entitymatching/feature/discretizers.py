@@ -5,11 +5,29 @@ Code adopted from https://github.com/navicto/Discretization-MDLPC
 import logging
 
 import numpy as np
-from math import log
+from math import log, ceil
+from scipy.stats import iqr
+from skfeature.utility.data_discretization import data_discretization
 from skfeature.utility.entropy_estimators import entropyd
 from sklearn.base import TransformerMixin
 
 logger = logging.getLogger(__name__)
+
+
+class EqualWidthDiscretizer(TransformerMixin):
+    def __init__(self, **kwargs):
+        self.features = kwargs.get('features', None)
+
+    def transform(self, X, inplace=False):
+        # Get the shape of the array
+        self.features = X
+        n_sample, n_feature = X.shape
+        # Apply Freedman-Diaconis' rule (no assumption on the distribution)
+        # to estimate the number of bins needed for discretization
+        bins = ceil(n_sample ** (1 / 3.0) / (2.0 * iqr(X)))
+        # Return discretized array
+        return data_discretization(X, bins) if inplace \
+            else data_discretization(X.copy(), bins)
 
 
 class MDLPCDiscretizer(TransformerMixin):
