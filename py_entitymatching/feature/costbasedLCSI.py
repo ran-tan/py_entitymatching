@@ -28,6 +28,7 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
     """
 
     n_samples, n_features = X.shape
+    info_term_scaler, cost_scaler = entropyd(y), costs.sum()
     # index of selected features, initialized to be empty
     F = []
     # Objective function value for selected features
@@ -44,21 +45,15 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
         f = X[:, i]
         t1[i] = midd(f, y)
 
-    def add_feature(idx):
-        F.append(idx)
-        J_CMI.append(t1[idx])
-        return X[:, idx]
-
     # select the feature whose mutual information is the largest
-    idx = np.argmax(t1)
-    f_select = add_feature(idx)
+    idx = np.argmax(t1/info_term_scaler - alpha*costs.values/cost_scaler)
+    F.append(idx)
+    f_select = X[:, idx]
 
     if n_selected_features == 1:
-        return np.array(F), np.array(J_CMI)
+        return np.array(F)
 
-    # make sure that j_cmi is positive at the very beginning
-    j_cmi = J_CMI[0]
-    while len(F) < n_selected_features and j_cmi > 0:
+    while len(F) < n_selected_features:
         # we assign an extreme small value to j_cmi to ensure it is smaller than all possible values of j_cmi
         j_cmi = -1E30
         beta = 1.0 / len(F)
@@ -70,11 +65,14 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
                 t3[i] += cmidd(f_select, f, y)
                 # calculate j_cmi for feature i (not in F)
                 t = t1[i] - beta*t2[i] + gamma*t3[i]
+                # calculate normalized and cost adjusted values for feature i
+                t_adjusted = t/info_term_scaler - alpha*costs.iloc[i]/cost_scaler
                 # record the largest j_cmi and the corresponding feature index
-                if t > j_cmi:
-                    j_cmi = t
+                if t_adjusted > j_cmi:
+                    j_cmi = t_adjusted
                     idx = i
 
-        f_select = add_feature(idx)
+        F.append(idx)
+        f_select = X[:, idx]
 
-    return np.array(F), np.array(J_CMI)
+    return np.array(F)
