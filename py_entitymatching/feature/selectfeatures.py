@@ -29,6 +29,8 @@ def select_features_group_info(feature_table, table,
     discretizer.fit_transform(x.values, y.values)
 
     feature_scores = []
+    if not independent_attrs:
+        independent_attrs = set(feature_table['left_attribute'])
     # group features by attribute and select the most relevant feature from each group
     for attr in independent_attrs:
         feature_group = \
