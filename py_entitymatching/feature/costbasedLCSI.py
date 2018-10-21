@@ -52,7 +52,7 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
     f_select = X[:, idx]
 
     if n_selected_features == 1:
-        return np.array(F)
+        return np.array(F), np.array(J_CMI)
 
     while len(F) < n_selected_features:
         # we assign an extreme small value to j_cmi to ensure it is smaller than all possible values of j_cmi
