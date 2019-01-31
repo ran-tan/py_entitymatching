@@ -11,7 +11,7 @@ from sklearn.feature_selection import GenericUnivariateSelect
 from skfeature.utility.entropy_estimators import midd
 from skfeature.function.information_theoretical_based import MIFS, MRMR, CIFE, JMI, CMIM, ICAP, DISR, FCBF
 from py_entitymatching.feature.discretizers import MDLPCDiscretizer
-from py_entitymatching.feature.costbasedLCSI import cost_based_lcsi
+from py_entitymatching.feature.costbasedLCSI import cost_based_lcsi, cost_based_cmim
 
 
 def select_features_group_info(feature_table, table,
@@ -52,7 +52,8 @@ def select_features_group_info(feature_table, table,
     return feature_table_selected
 
 
-def select_features_cost(feature_table, table, costs, alpha=0.0,
+def select_features_cost(feature_table, table, costs,
+                         alpha=0.0, mi_filter='JMI',
                          target_attr=None, exclude_attrs=None, parameter=2):
     # get attributes to project, validate parameters
     project_attrs = get_attrs_to_project(table=table,
@@ -67,7 +68,10 @@ def select_features_cost(feature_table, table, costs, alpha=0.0,
     discretizer.fit_transform(x.values, y.values)
 
     # fit and select most relevant features
-    result = cost_based_lcsi(x.values, y.values, costs, alpha, parameter)
+    if mi_filter == 'JMI':
+        result = cost_based_lcsi(x.values, y.values, costs, alpha, parameter)
+    elif mi_filter == 'CMIM':
+        result = cost_based_cmim(x.values, y.values, costs, alpha, parameter)
 
     # get selected features in feature_table
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)

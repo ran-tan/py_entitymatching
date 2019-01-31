@@ -95,8 +95,14 @@ class SelectFeaturesTestCases(unittest.TestCase):
             independent_attrs=['id', 'title', 'authors', 'venue', 'year'], parameter=2)
         self.assertEqual(isinstance(feature_table_selected, pd.DataFrame), True)
 
-    def test_select_features_cost_valid_input(self):
+    def test_select_features_cost_jmi_valid_input(self):
         feature_table_selected = select_features_cost(
             feature_table=feature_table, table=x, costs=costs, alpha=1.0,
+            target_attr='gold', exclude_attrs=['_id', 'ltable.id', 'rtable.id'], parameter=2)
+        self.assertEqual(isinstance(feature_table_selected, pd.DataFrame), True)
+
+    def test_select_features_cost_cmim_valid_input(self):
+        feature_table_selected = select_features_cost(
+            feature_table=feature_table, table=x, costs=costs, alpha=1.0, mi_filter='CMIM',
             target_attr='gold', exclude_attrs=['_id', 'ltable.id', 'rtable.id'], parameter=2)
         self.assertEqual(isinstance(feature_table_selected, pd.DataFrame), True)
