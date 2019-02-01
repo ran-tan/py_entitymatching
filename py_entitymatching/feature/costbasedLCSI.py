@@ -51,9 +51,7 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
     J_CMI.append(t1[idx]/info_term_scaler - alpha*costs.iloc[idx]/cost_scaler)
     f_select = X[:, idx]
 
-    if n_selected_features == 1:
-        return np.array(F), np.array(J_CMI)
-
+    fade = 0.9
     while len(F) < n_selected_features:
         # we assign an extreme small value to j_cmi to ensure it is smaller than all possible values of j_cmi
         j_cmi = -1E30
@@ -67,7 +65,7 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
                 # calculate j_cmi for feature i (not in F)
                 t = t1[i] - beta*t2[i] + gamma*t3[i]
                 # calculate normalized and cost adjusted values for feature i
-                t_adjusted = t/info_term_scaler - alpha*costs.iloc[i]/cost_scaler
+                t_adjusted = t/info_term_scaler - alpha * fade * costs.iloc[i]/cost_scaler
                 # record the largest j_cmi and the corresponding feature index
                 if t_adjusted > j_cmi:
                     j_cmi = t_adjusted
@@ -76,6 +74,7 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
         F.append(idx)
         J_CMI.append(j_cmi)
         f_select = X[:, idx]
+        fade *= 0.9
 
     return np.array(F), np.array(J_CMI)
 
@@ -121,7 +120,7 @@ def cost_based_cmim(X, y, costs, alpha, n_selected_features):
 
     # max stores max(I(fj;f)-I(fj;f|y)) for each feature f
     # we assign an extreme small value to max[i] ito make it is smaller than possible value of max(I(fj;f)-I(fj;f|y))
-    max = -10000000*np.ones(n_features)
+    max = -1E30 * np.ones(n_features)
     for i in range(n_features):
         f = X[:, i]
         t1[i] = midd(f, y)
@@ -132,15 +131,10 @@ def cost_based_cmim(X, y, costs, alpha, n_selected_features):
     J_CMIM.append(t1[idx])
     f_select = X[:, idx]
 
-    # make sure that j_cmi is positive at the very beginning
-    j_cmim = 1
-
+    fade = 0.9
     while len(F) < n_selected_features:
-        if j_cmim <= 0:
-            break
-
         # we assign an extreme small value to j_cmim to ensure it is smaller than all possible values of j_cmim
-        j_cmim = -1000000000000
+        j_cmim = -1E30
         for i in range(n_features):
             if i not in F:
                 f = X[:, i]
@@ -151,7 +145,7 @@ def cost_based_cmim(X, y, costs, alpha, n_selected_features):
                 # calculate j_cmim for feature i (not in F)
                 t = t1[i] - max[i]
                 # calculate normalized and cost adjusted values for feature i
-                t_adjusted = t / info_term_scaler - alpha * costs.iloc[i] / cost_scaler
+                t_adjusted = t / info_term_scaler - alpha * fade * costs.iloc[i] / cost_scaler
                 # record the largest j_cmim and the corresponding feature index
                 if t_adjusted > j_cmim:
                     j_cmim = t_adjusted
@@ -159,5 +153,6 @@ def cost_based_cmim(X, y, costs, alpha, n_selected_features):
         F.append(idx)
         J_CMIM.append(j_cmim)
         f_select = X[:, idx]
+        fade *= 0.9
 
     return np.array(F), np.array(J_CMIM)
