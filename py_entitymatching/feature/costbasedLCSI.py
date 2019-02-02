@@ -1,7 +1,7 @@
 from skfeature.utility.entropy_estimators import *
 
 
-def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
+def cost_based_lcsi(X, y, costs, alpha, fade_rate, n_selected_features):
     """
     This function implements the basic scoring criteria for linear combination of shannon information term.
     The scoring criteria is calculated based on the formula j_cmi=I(f;y)-beta*sum_j(I(fj;f))+gamma*sum(I(fj;f|y))
@@ -51,7 +51,7 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
     J_CMI.append(t1[idx]/info_term_scaler - alpha*costs.iloc[idx]/cost_scaler)
     f_select = X[:, idx]
 
-    fade = 0.9
+    fade = fade_rate
     while len(F) < n_selected_features:
         # we assign an extreme small value to j_cmi to ensure it is smaller than all possible values of j_cmi
         j_cmi = -1E30
@@ -74,12 +74,12 @@ def cost_based_lcsi(X, y, costs, alpha, n_selected_features):
         F.append(idx)
         J_CMI.append(j_cmi)
         f_select = X[:, idx]
-        fade *= 0.9
+        fade *= fade_rate
 
     return np.array(F), np.array(J_CMI)
 
 
-def cost_based_cmim(X, y, costs, alpha, n_selected_features):
+def cost_based_cmim(X, y, costs, alpha, fade_rate, n_selected_features):
     """
     This function implements the CMIM feature selection.
     The scoring criteria is calculated based on the formula j_cmim=I(f;y)-max_j(I(fj;f)-I(fj;f|y))
@@ -131,7 +131,7 @@ def cost_based_cmim(X, y, costs, alpha, n_selected_features):
     J_CMIM.append(t1[idx])
     f_select = X[:, idx]
 
-    fade = 0.9
+    fade = fade_rate
     while len(F) < n_selected_features:
         # we assign an extreme small value to j_cmim to ensure it is smaller than all possible values of j_cmim
         j_cmim = -1E30
@@ -153,6 +153,6 @@ def cost_based_cmim(X, y, costs, alpha, n_selected_features):
         F.append(idx)
         J_CMIM.append(j_cmim)
         f_select = X[:, idx]
-        fade *= 0.9
+        fade *= fade_rate
 
     return np.array(F), np.array(J_CMIM)

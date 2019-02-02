@@ -53,7 +53,7 @@ def select_features_group_info(feature_table, table,
 
 
 def select_features_cost(feature_table, table, costs,
-                         alpha=0.0, mi_filter='JMI',
+                         alpha=0.0, fade_rate=0.9, mi_filter='JMI',
                          target_attr=None, exclude_attrs=None, parameter=2):
     # get attributes to project, validate parameters
     project_attrs = get_attrs_to_project(table=table,
@@ -69,9 +69,9 @@ def select_features_cost(feature_table, table, costs,
 
     # fit and select most relevant features
     if mi_filter == 'JMI':
-        result = cost_based_lcsi(x.values, y.values, costs, alpha, parameter)
+        result = cost_based_lcsi(x.values, y.values, costs, alpha, fade_rate, parameter)
     elif mi_filter == 'CMIM':
-        result = cost_based_cmim(x.values, y.values, costs, alpha, parameter)
+        result = cost_based_cmim(x.values, y.values, costs, alpha, fade_rate, parameter)
 
     # get selected features in feature_table
     feature_table_selected = pd.DataFrame(columns=feature_table.columns)
