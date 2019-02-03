@@ -126,9 +126,9 @@ def cost_based_cmim(X, y, costs, alpha, fade_rate, n_selected_features):
         t1[i] = midd(f, y)
 
     # select the feature whose mutual information is the largest
-    idx = np.argmax(t1)
+    idx = np.argmax(t1 / info_term_scaler - alpha * costs.values / cost_scaler)
     F.append(idx)
-    J_CMIM.append(t1[idx])
+    J_CMIM.append(t1[idx] / info_term_scaler - alpha * costs.iloc[idx] / cost_scaler)
     f_select = X[:, idx]
 
     fade = fade_rate
