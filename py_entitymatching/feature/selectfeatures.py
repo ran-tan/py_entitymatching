@@ -53,7 +53,7 @@ def select_features_group_info(feature_table, table,
 
 
 def select_features_cost(feature_table, table, costs,
-                         alpha=0.0, fade_rate=0.9, mi_filter='JMI',
+                         alpha=0.0, fade_rate=1.0, mi_filter='JMI',
                          target_attr=None, exclude_attrs=None, parameter=2):
     # get attributes to project, validate parameters
     project_attrs = get_attrs_to_project(table=table,
